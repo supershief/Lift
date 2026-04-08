@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Lift">
+<meta name="theme-color" content="#0e0e0f">
+<title>Lift</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root {
+  --bg: #0e0e0f;
+  --surface: #1a1a1e;
+  --elevated: #2a2a2e;
+  --accent: #534AB7;
+  --accent-light: #AFA9EC;
+  --text: #F0F0F0;
+  --text-sec: #888888;
+  --text-muted: #555555;
+  --r-lg: 16px;
+  --r-md: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); max-width: 430px; margin: 0 auto; overflow-x: hidden; }
+.screen { display: none; padding: 60px 20px 90px; min-height: 100vh; }
+.screen.active { display: block; }
+
+.nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: var(--bg); border-top: 1px solid #1e1e22; display: flex; justify-content: space-around; padding: 10px 0 24px; z-index: 100; }
+.nav-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; padding: 4px 20px; color: var(--text-muted); font-family: inherit; transition: color 0.15s; }
+.nav-btn span { font-size: 11px; letter-spacing: 0.02em; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn:hover { color: var(--accent-light); }
+
+.btn-accent { background: var(--accent); border: none; border-radius: var(--r-md); color: #fff; font-size: 15px; font-weight: 500; font-family: inherit; cursor: pointer; transition: background 0.15s; }
+.btn-accent:hover { background: var(--accent-light); color: var(--bg); }
+
+/* HOME */
+.greeting { font-size: 22px; font-weight: 500; margin-bottom: 4px; padding-top: 12px; }
+.greeting-sub { font-size: 14px; color: var(--text-sec); margin-bottom: 24px; }
+.streak-card { background: var(--surface); border-radius: var(--r-lg); padding: 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px; }
+.streak-circle { width: 52px; height: 52px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.streak-big { font-size: 22px; font-weight: 500; }
+.streak-sub { font-size: 13px; color: var(--text-sec); }
+.section-label { font-size: 16px; font-weight: 500; margin-bottom: 14px; }
+.week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 28px; }
+.day { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.day-name { font-size: 11px; color: var(--text-sec); }
+.day-dot { width: 34px; height: 34px; border-radius: 50%; background: var(--elevated); display: flex; align-items: center; justify-content: center; }
+.day-dot.done { background: var(--accent); }
+.day-dot.today { background: transparent; border: 1.5px solid var(--accent); }
+.day-dot svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.last-card { background: var(--surface); border-radius: var(--r-lg); padding: 16px; }
+.last-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.last-name { font-size: 14px; font-weight: 500; }
+.last-date { font-size: 12px; color: var(--text-sec); }
+.ex-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-top: 1px solid var(--elevated); }
+.ex-row-name { font-size: 13px; color: #c0c0c0; }
+.ex-row-val { font-size: 13px; color: var(--accent-light); font-weight: 500; }
+.io-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--surface); border:1px solid var(--elevated); border-radius:var(--r-md); color:var(--text-sec); font-size:13px; font-family:inherit; padding:11px 16px; cursor:pointer; transition:border-color 0.15s,color 0.15s; }
+.io-btn:hover { border-color:var(--accent-light); color:var(--text); }
+.empty-card { background: var(--surface); border-radius: var(--r-lg); padding: 32px 20px; text-align: center; color: var(--text-sec); font-size: 14px; line-height: 1.6; }
+
+/* LOG */
+.log-top { display: flex; justify-content: space-between; align-items: flex-start; padding-top: 12px; margin-bottom: 20px; }
+.log-title-row { display: inline-flex; cursor: pointer; }
+.log-title { font-size: 22px; font-weight: 500; border-bottom: 1.5px dashed var(--text-muted); padding-bottom: 2px; }
+.log-date { font-size: 14px; color: var(--text-sec); margin-top: 4px; }
+.ex-block { background: var(--surface); border-radius: var(--r-lg); padding: 16px; margin-bottom: 10px; }
+.ex-block-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.ex-block-name { font-size: 15px; font-weight: 500; }
+.ex-type-toggle { display: flex; border-radius: 6px; overflow: hidden; border: 1px solid var(--elevated); margin-left: auto; margin-right: 10px; }
+.ex-type-btn { background: none; border: none; color: var(--text-sec); font-size: 11px; font-family: inherit; padding: 4px 10px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.ex-type-btn.active { background: var(--accent); color: #fff; }
+.del-btn { background: none; border: none; cursor: pointer; color: var(--text-sec); padding: 2px; }
+.del-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.set-cols { display: flex; gap: 8px; align-items: center; padding: 0 0 6px; }
+.col-lbl { font-size: 11px; color: var(--text-sec); letter-spacing: 0.04em; text-transform: uppercase; }
+.col-lbl.w-num { width: 22px; }
+.col-lbl.w-inp { width: 64px; text-align: center; }
+.col-lbl.w-unit { width: 30px; }
+.set-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.set-num { font-size: 12px; color: var(--text-sec); width: 22px; }
+.set-inp { background: var(--elevated); border: 1px solid transparent; border-radius: var(--r-md); color: var(--text); font-size: 15px; font-weight: 500; font-family: inherit; text-align: center; padding: 9px 4px; width: 64px; -moz-appearance: textfield; }
+.set-inp::-webkit-outer-spin-button, .set-inp::-webkit-inner-spin-button { -webkit-appearance: none; }
+.set-inp:focus { outline: none; border-color: var(--accent); }
+.set-unit { font-size: 12px; color: var(--text-sec); width: 30px; }
+.del-set { background: none; border: none; cursor: pointer; color: var(--text-sec); margin-left: auto; padding: 4px; }
+.del-set svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.add-set-btn { background: none; border: none; color: var(--accent); font-size: 13px; font-family: inherit; cursor: pointer; padding: 4px 0; display: flex; align-items: center; gap: 4px; }
+.add-set-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.add-ex-btn { width: 100%; background: transparent; border: 1px solid var(--elevated); border-radius: var(--r-md); padding: 0 16px; height: 44px; font-size: 14px; color: var(--text-sec); font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; transition: border-color 0.15s, color 0.15s; }
+.add-ex-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.add-ex-btn:hover { border-color: var(--accent-light); color: var(--text); }
+.big-save-btn { width: 100%; height: 44px; border-radius: var(--r-md); padding: 0 16px; margin-top: 4px; }
+
+/* PROGRESS */
+.prog-header { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-bottom: 16px; }
+.prog-title { font-size: 22px; font-weight: 500; }
+.level-badge { background: var(--accent); border-radius: 20px; padding: 5px 14px; font-size: 13px; font-weight: 500; color: #fff; }
+.filter-row { display: flex; gap: 8px; margin-bottom: 20px; }
+.filter-btn { background: var(--surface); border: 1px solid var(--elevated); border-radius: var(--r-md); color: var(--text-sec); font-size: 13px; font-family: inherit; padding: 7px 14px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: background 0.15s, color 0.15s; }
+.filter-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.filter-btn:hover:not(.active) { border-color: var(--accent-light); color: var(--text); }
+.date-range { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
+.date-inp { background: var(--surface); border: 1px solid var(--elevated); border-radius: var(--r-md); color: var(--text-sec); font-size: 13px; font-family: inherit; padding: 7px 12px; flex: 1; }
+.date-inp:focus { outline: none; border-color: var(--accent); color: var(--text); }
+.date-apply { padding: 7px 14px; font-size: 13px; }
+.chart-card { background: var(--surface); border-radius: var(--r-lg); padding: 16px; margin-bottom: 16px; }
+.chart-wrap { position: relative; width: 100%; height: 160px; margin-bottom: 4px; }
+canvas.line-chart { width: 100%; height: 100%; display: block; }
+.legend { background: var(--surface); border-radius: var(--r-lg); overflow: hidden; }
+.legend-header { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--elevated); }
+.legend-col { font-size: 12px; color: var(--text-sec); }
+.legend-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--elevated); cursor: pointer; transition: background 0.15s; }
+.legend-row:last-child { border-bottom: none; }
+.legend-row:hover { background: var(--elevated); }
+.legend-left { display: flex; align-items: center; gap: 10px; }
+.legend-check { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.legend-check svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.legend-name { font-size: 14px; }
+.legend-name.muted { color: var(--text-sec); }
+.legend-val { font-size: 14px; }
+.legend-val.muted { color: var(--text-sec); }
+
+/* MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; align-items: flex-end; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border-radius: var(--r-lg) var(--r-lg) 0 0; padding: 20px; width: 100%; max-width: 430px; max-height: 75vh; overflow-y: auto; }
+.modal-title { font-size: 16px; font-weight: 500; margin-bottom: 14px; }
+.modal-inp { width: 100%; background: var(--elevated); border: 1px solid transparent; border-radius: var(--r-md); color: var(--text); font-size: 15px; font-family: inherit; padding: 12px; margin-bottom: 12px; }
+.modal-inp:focus { outline: none; border-color: var(--accent); }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.pill { background: var(--elevated); border: none; border-radius: 20px; color: var(--text-sec); font-size: 13px; font-family: inherit; padding: 7px 14px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.pill:hover { background: var(--accent); color: #fff; }
+.modal-cancel { width: 100%; background: none; border: none; color: var(--text-sec); font-size: 14px; font-family: inherit; padding: 12px; cursor: pointer; margin-top: 6px; }
+.modal-cancel:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="screen-home" class="screen active">
+  <p class="greeting" id="greeting">Goedemorgen, Shiva</p>
+  <p class="greeting-sub" id="greeting-sub">Week — — trainingen</p>
+  <div class="streak-card">
+    <div class="streak-circle">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M10.5 14.0002L7.5 11.0002M10.5 14.0002C11.8968 13.469 13.2369 12.799 14.5 12.0002M10.5 14.0002V19.0002C10.5 19.0002 13.53 18.4502 14.5 17.0002C15.58 15.3802 14.5 12.0002 14.5 12.0002M7.5 11.0002C8.03214 9.61968 8.7022 8.29631 9.5 7.05025C10.6652 5.18723 12.2876 3.6533 14.213 2.59434C16.1384 1.53538 18.3027 0.986619 20.5 1.00025C20.5 3.72025 19.72 8.50025 14.5 12.0002M7.5 11.0002H2.5C2.5 11.0002 3.05 7.97025 4.5 7.00025C6.12 5.92025 9.5 7.00025 9.5 7.00025M3 15.5002C1.5 16.7602 1 20.5002 1 20.5002C1 20.5002 4.74 20.0002 6 18.5002C6.71 17.6602 6.7 16.3702 5.91 15.5902C5.52131 15.2193 5.00929 15.0049 4.47223 14.9883C3.93516 14.9717 3.41088 15.154 3 15.5002Z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div>
+      <div class="streak-big" id="streak-num">0 weken</div>
+      <div class="streak-sub" id="streak-desc">0 trainingen deze week</div>
+    </div>
+  </div>
+  <p class="section-label">Deze week</p>
+  <div class="week-grid" id="week-grid"></div>
+  <p class="section-label">Laatste training</p>
+  <div id="last-card"></div>
+
+  <div style="display:flex;gap:8px;margin-top:24px">
+    <button class="io-btn" onclick="exportData()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exporteren
+    </button>
+    <label class="io-btn" style="cursor:pointer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Importeren
+      <input type="file" accept=".json" onchange="importData(event)" style="display:none">
+    </label>
+  </div>
+</div>
+
+<!-- LOG -->
+<div id="screen-log" class="screen">
+  <div class="log-top">
+    <div>
+      <div class="log-title-row" onclick="renameTraining()">
+        <span class="log-title" id="log-name">Nieuwe training</span>
+      </div>
+      <div class="log-date" id="log-date"></div>
+    </div>
+  </div>
+  <div id="ex-container"></div>
+  <button class="add-ex-btn" onclick="openModal()">
+    <svg viewBox="0 0 15 15" fill="none"><path d="M7.5 0.5V14.5M0.5 7.5H14.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Nieuwe oefening toevoegen
+  </button>
+  <button class="btn-accent big-save-btn" id="save-btn" onclick="saveTraining()">Opslaan</button>
+</div>
+
+<!-- PROGRESS -->
+<div id="screen-progress" class="screen">
+  <div class="prog-header">
+    <span class="prog-title">Voortgang</span>
+    <span class="level-badge" id="level-badge">Starter</span>
+  </div>
+  <div class="filter-row">
+    <button class="filter-btn active" id="filter-6w" onclick="setFilter('6w',this)">Laatste 6 weken</button>
+    <button class="filter-btn" id="filter-custom" onclick="setFilter('custom',this)">Periode <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+  </div>
+  <div id="date-range-row" style="display:none" class="date-range">
+    <input type="date" class="date-inp" id="date-from">
+    <span style="color:var(--text-sec);font-size:13px">t/m</span>
+    <input type="date" class="date-inp" id="date-to">
+    <button class="btn-accent date-apply" onclick="applyDateRange()">OK</button>
+  </div>
+  <div id="prog-container"></div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" id="nav-home" onclick="showScreen('home')">
+    <svg width="19" height="20" viewBox="0 0 19 20" fill="none"><path d="M10.4823 0.997153C10.131 0.7239 9.95532 0.587274 9.76135 0.534755C9.5902 0.488415 9.4098 0.488415 9.23865 0.534755C9.04468 0.587274 8.86902 0.7239 8.5177 0.997153L1.73539 6.27228C1.28202 6.6249 1.05534 6.80121 0.892027 7.02201C0.747366 7.2176 0.639601 7.43794 0.574027 7.67221C0.5 7.93667 0.5 8.22385 0.5 8.79821V16.0331C0.5 17.1532 0.5 17.7133 0.717987 18.1411C0.909734 18.5174 1.21569 18.8234 1.59202 19.0152C2.01984 19.2331 2.5799 19.2331 3.7 19.2331H5.7C5.98003 19.2331 6.12004 19.2331 6.227 19.1786C6.32108 19.1307 6.39757 19.0542 6.4455 18.9601C6.5 18.8532 6.5 18.7132 6.5 18.4331V11.8331C6.5 11.2731 6.5 10.9931 6.60899 10.7791C6.70487 10.591 6.85785 10.438 7.04601 10.3421C7.25992 10.2331 7.53995 10.2331 8.1 10.2331H10.9C11.4601 10.2331 11.7401 10.2331 11.954 10.3421C12.1422 10.438 12.2951 10.591 12.391 10.7791C12.5 10.9931 12.5 11.2731 12.5 11.8331V18.4331C12.5 18.7132 12.5 18.8532 12.5545 18.9601C12.6024 19.0542 12.6789 19.1307 12.773 19.1786C12.88 19.2331 13.02 19.2331 13.3 19.2331H15.3C16.4201 19.2331 16.9802 19.2331 17.408 19.0152C17.7843 18.8234 18.0903 18.5174 18.282 18.1411C18.5 17.7133 18.5 17.1532 18.5 16.0331V8.79821C18.5 8.22385 18.5 7.93667 18.426 7.67221C18.3604 7.43794 18.2526 7.2176 18.108 7.02201C17.9447 6.80121 17.718 6.6249 17.2646 6.27228L10.4823 0.997153Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Home</span>
+  </button>
+  <button class="nav-btn" id="nav-log" onclick="showScreen('log')">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 0.5V14.5M0.5 7.5H14.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Loggen</span>
+  </button>
+  <button class="nav-btn" id="nav-progress" onclick="showScreen('progress')">
+    <svg width="21" height="11" viewBox="0 0 21 11" fill="none"><path d="M20.5 0.5L12.6314 8.36863C12.2354 8.76465 12.0373 8.96265 11.809 9.03684C11.6082 9.1021 11.3918 9.1021 11.191 9.03684C10.9627 8.96265 10.7646 8.76465 10.3686 8.36863L7.63137 5.63137C7.23535 5.23535 7.03735 5.03735 6.80902 4.96316C6.60817 4.8979 6.39183 4.8979 6.19098 4.96316C5.96265 5.03735 5.76465 5.23535 5.36863 5.63137L0.5 10.5M20.5 0.5H13.5M20.5 0.5V7.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Voortgang</span>
+  </button>
+</nav>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">Oefening toevoegen</div>
+    <input class="modal-inp" id="modal-inp" type="text" placeholder="Naam oefening..." oninput="filterPills(this.value)">
+    <div class="pills" id="pills"></div>
+    <button class="btn-accent" style="width:100%;padding:14px;border-radius:var(--r-md)" onclick="confirmEx()">Toevoegen</button>
+    <button class="modal-cancel" onclick="closeModal()">Annuleren</button>
+  </div>
+</div>
+
+<script>
+const ALL_EX = ['Bench press','Incline press','Overhead press','Dips','Cable fly','Chest press','Pec deck','Squat','Leg press','Romanian deadlift','Leg curl','Leg extension','Hip thrust','Deadlift','Barbell row','Lat pulldown','Seated row','Pull-ups','Bicep curl','Hammer curl','Tricep pushdown','Skull crusher','Lateral raise','Face pull','Shrugs','Calf raise','Shoulder press'];
+const LINE_COLORS = ['#534AB7','#E05252','#E8A838','#3B9E6B','#5296E8','#B353A8'];
+
+let exercises = [];
+let trainingName = 'Nieuwe training';
+let filterMode = '6w';
+let customFrom = null, customTo = null;
+let activeLines = new Set();
+
+function getData() { try { return JSON.parse(localStorage.getItem('lift_v2')||'{"trainings":[]}'); } catch(e) { return {trainings:[]}; } }
+function saveData(d) { localStorage.setItem('lift_v2', JSON.stringify(d)); }
+function toDateStr(d) { return d.toISOString().split('T')[0]; }
+function todayStr() { return toDateStr(new Date()); }
+
+function getWeekNum(d) {
+  const dt = new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  dt.setUTCDate(dt.getUTCDate()+4-(dt.getUTCDay()||7));
+  const y = new Date(Date.UTC(dt.getUTCFullYear(),0,1));
+  return Math.ceil((((dt-y)/86400000)+1)/7);
+}
+function getMonday(d) { const dt=new Date(d); dt.setDate(dt.getDate()-((dt.getDay()+6)%7)); return dt; }
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  if(name==='home') renderHome();
+  if(name==='log') renderLog();
+  if(name==='progress') renderProgress();
+}
+
+/* HOME */
+function renderHome() {
+  const data = getData();
+  const now = new Date();
+  const h = now.getHours();
+  document.getElementById('greeting').textContent = (h<12?'Goedemorgen':h<18?'Goedemiddag':'Goedenavond')+', Shiva';
+  const monday = getMonday(now);
+  const weekDays = Array.from({length:7},(_,i)=>{ const d=new Date(monday); d.setDate(monday.getDate()+i); return d; });
+  const trained = new Set(data.trainings.map(t=>t.date));
+  const weekCount = weekDays.filter(d=>trained.has(toDateStr(d))).length;
+  document.getElementById('greeting-sub').textContent = `Week ${getWeekNum(now)} - ${weekCount}/3 trainingen`;
+  const streak = calcStreak(data.trainings);
+  document.getElementById('streak-num').textContent = streak+(streak===1?' week':' weken');
+  document.getElementById('streak-desc').textContent = weekCount+' training'+(weekCount!==1?'en':'')+' deze week';
+  const grid = document.getElementById('week-grid');
+  grid.innerHTML = '';
+  const today = todayStr();
+  ['M','D','W','D','V','Z','Z'].forEach((name,i)=>{
+    const d = weekDays[i];
+    const ds = toDateStr(d);
+    const done = trained.has(ds);
+    const isToday = ds===today;
+    const el = document.createElement('div');
+    el.className = 'day';
+    el.innerHTML = `<span class="day-name">${name}</span><div class="day-dot ${done?'done':isToday?'today':''}">${done?'<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>':''}</div>`;
+    grid.appendChild(el);
+  });
+  const lc = document.getElementById('last-card');
+  if(!data.trainings.length){ lc.innerHTML='<div class="empty-card">Nog geen trainingen gelogd.<br>Druk op + om te beginnen.</div>'; return; }
+  const last = data.trainings[data.trainings.length-1];
+  const ds = new Date(last.date).toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'});
+  const rows = last.exercises.slice(0,5).map(ex=>{
+    if(ex.type==='time'){
+      const bestSec = Math.max(...ex.sets.map(s=>parseFloat(s.sec)||0));
+      return `<div class="ex-row"><span class="ex-row-name">${ex.name}</span><span class="ex-row-val">${ex.sets.length}×${bestSec} sec</span></div>`;
+    }
+    const best = ex.sets.reduce((a,b)=>parseFloat(b.kg||0)>=parseFloat(a.kg||0)?b:a,ex.sets[0]);
+    return `<div class="ex-row"><span class="ex-row-name">${ex.name}</span><span class="ex-row-val">${ex.sets.length}×${best.reps}${best.kg?' - '+best.kg+'kg':''}</span></div>`;
+  }).join('');
+  lc.innerHTML = `<div class="last-card"><div class="last-header"><span class="last-name">${last.name}</span><span class="last-date">${ds}</span></div>${rows}</div>`;
+}
+
+function calcStreak(trainings) {
+  if(!trainings.length) return 0;
+  const weeks = new Set(trainings.map(t=>{ const d=new Date(t.date); return getWeekNum(d)+'-'+d.getFullYear(); }));
+  const now = new Date(); let wn=getWeekNum(now),yr=now.getFullYear(),streak=0;
+  for(let i=0;i<104;i++){ if(weeks.has(wn+'-'+yr)){streak++;wn--;if(wn===0){wn=52;yr--;}}else break; }
+  return streak;
+}
+
+function getLevel(trainings) {
+  if(!trainings.length) return 'Starter';
+  const first = new Date(trainings[0].date);
+  const weeks = (new Date()-first)/(1000*60*60*24*7);
+  if(weeks<6) return 'Starter';
+  if(weeks<26) return 'Beginner';
+  if(weeks<52) return 'Gevorderd';
+  if(weeks<104) return 'Ervaren';
+  return 'Expert';
+}
+
+/* LOG — laad training van vandaag als die bestaat */
+function renderLog() {
+  const data = getData();
+  const today = todayStr();
+  const todayTraining = data.trainings.find(t => t.date === today);
+
+  if(todayTraining) {
+    trainingName = todayTraining.name;
+    exercises = todayTraining.exercises.map(ex=>({
+      name: ex.name,
+      type: ex.type||'weight',
+      sets: ex.sets.map(s=>({kg:s.kg||'',reps:s.reps||'',sec:s.sec||''}))
+    }));
+  } else if(exercises.length === 0) {
+    trainingName = 'Nieuwe training';
+  }
+
+  document.getElementById('log-name').textContent = trainingName;
+  document.getElementById('log-date').textContent = new Date().toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  renderExercises();
+}
+
+function renameTraining() {
+  const n = prompt('Naam training:', trainingName);
+  if(n&&n.trim()){ trainingName=n.trim(); document.getElementById('log-name').textContent=trainingName; }
+}
+
+function renderExercises() {
+  const c = document.getElementById('ex-container'); c.innerHTML='';
+  exercises.forEach((ex,ei)=>{
+    const block = document.createElement('div'); block.className='ex-block';
+    const isTime = ex.type==='time';
+    let sets = isTime
+      ? `<div class="set-cols"><span class="col-lbl w-num"></span><span class="col-lbl w-inp">Seconden</span></div>`
+      : `<div class="set-cols"><span class="col-lbl w-num"></span><span class="col-lbl w-inp">KG</span><span class="col-lbl w-unit"></span><span class="col-lbl w-inp">Reps</span></div>`;
+    ex.sets.forEach((s,si)=>{
+      if(isTime){
+        sets+=`<div class="set-row"><span class="set-num">${si+1}.</span>
+          <input class="set-inp" type="number" value="${s.sec||''}" placeholder="0" onchange="upd(${ei},${si},'sec',this.value)" style="width:100px">
+          <span class="set-unit">sec</span>
+          <button class="del-set" onclick="delSet(${ei},${si})"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>`;
+      } else {
+        sets+=`<div class="set-row"><span class="set-num">${si+1}.</span>
+          <input class="set-inp" type="number" value="${s.kg||''}" placeholder="0" onchange="upd(${ei},${si},'kg',this.value)">
+          <span class="set-unit">kg</span>
+          <input class="set-inp" type="number" value="${s.reps||''}" placeholder="0" onchange="upd(${ei},${si},'reps',this.value)">
+          <button class="del-set" onclick="delSet(${ei},${si})"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>`;
+      }
+    });
+    block.innerHTML=`<div class="ex-block-top">
+        <span class="ex-block-name">${ex.name}</span>
+        <div class="ex-type-toggle">
+          <button class="ex-type-btn${!isTime?' active':''}" onclick="setExType(${ei},'weight')">KG</button>
+          <button class="ex-type-btn${isTime?' active':''}" onclick="setExType(${ei},'time')">Tijd</button>
+        </div>
+        <button class="del-btn" onclick="delEx(${ei})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </div>${sets}
+      <button class="add-set-btn" onclick="addSet(${ei})"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Set toevoegen</button>`;
+    c.appendChild(block);
+  });
+}
+function setExType(ei,type){ exercises[ei].type=type; exercises[ei].sets=[{kg:'',reps:'',sec:''}]; renderExercises(); }
+
+function upd(ei,si,f,v){ exercises[ei].sets[si][f]=v; }
+function addSet(ei){ const l=exercises[ei].sets.slice(-1)[0]; exercises[ei].sets.push({kg:l?l.kg:'',reps:l?l.reps:'',sec:l?l.sec:''}); renderExercises(); }
+function delSet(ei,si){ if(exercises[ei].sets.length>1){exercises[ei].sets.splice(si,1);renderExercises();} }
+function delEx(ei){ exercises.splice(ei,1); renderExercises(); }
+
+function openModal(){ document.getElementById('modal-inp').value=''; 
+function exportData(){
+  const data = getData();
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = 'lift-backup-' + date + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if(!imported.trainings || !Array.isArray(imported.trainings)){
+        alert('Ongeldig bestand. Zorg dat je een Lift-exportbestand gebruikt.');
+        return;
+      }
+      const existing = getData();
+      const existingIds = new Set(existing.trainings.map(t=>t.id));
+      const newTrainings = imported.trainings.filter(t=>!existingIds.has(t.id));
+      existing.trainings = [...existing.trainings, ...newTrainings]
+        .sort((a,b)=>a.date.localeCompare(b.date));
+      saveData(existing);
+      renderHome();
+      alert(newTrainings.length + ' training(en) geïmporteerd.');
+    } catch(err) {
+      alert('Er ging iets mis bij het importeren. Controleer het bestand.');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+filterPills(''); document.getElementById('modal').classList.add('open'); setTimeout(()=>document.getElementById('modal-inp').focus(),100); }
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+function filterPills(v){
+  const list=v?ALL_EX.filter(s=>s.toLowerCase().includes(v.toLowerCase())).slice(0,10):ALL_EX.slice(0,10);
+  document.getElementById('pills').innerHTML=list.map(s=>`<button class="pill" onclick="selectEx('${s}')">${s}</button>`).join('');
+}
+function selectEx(n){ document.getElementById('modal-inp').value=n; }
+function confirmEx(){
+  const n=document.getElementById('modal-inp').value.trim(); if(!n) return;
+  exercises.push({name:n,type:'weight',sets:[{kg:'',reps:'',sec:''}]});
+  closeModal(); renderExercises();
+}
+
+function saveTraining(){
+  if(!exercises.length){alert('Voeg eerst een oefening toe.');return;}
+  const data = getData();
+  const today = todayStr();
+  const cleanExercises = exercises
+    .map(ex=>({name:ex.name,type:ex.type||'weight',sets:ex.sets.filter(s=>s.reps||s.kg||s.sec)}))
+    .filter(ex=>ex.sets.length);
+
+  const existing = data.trainings.findIndex(t=>t.date===today);
+  const training = { id: existing>=0 ? data.trainings[existing].id : Date.now(), name:trainingName, date:today, exercises:cleanExercises };
+
+  if(existing>=0) data.trainings[existing]=training;
+  else data.trainings.push(training);
+
+  saveData(data);
+  renderHome();
+
+  const btn = document.getElementById('save-btn');
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:middle"><polyline points="20 6 9 17 4 12"/></svg> Opgeslagen';
+  btn.style.background = '#3B6D11';
+  btn.disabled = true;
+  setTimeout(()=>{ btn.innerHTML='Opslaan'; btn.style.background=''; btn.disabled=false; }, 2000);
+}
+
+/* PROGRESS */
+function setFilter(mode,btn){
+  filterMode=mode;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('date-range-row').style.display=mode==='custom'?'flex':'none';
+  if(mode!=='custom') renderProgress();
+}
+function applyDateRange(){
+  customFrom=document.getElementById('date-from').value;
+  customTo=document.getElementById('date-to').value;
+  if(customFrom&&customTo) renderProgress();
+}
+function getFilteredTrainings(data){
+  if(filterMode==='6w'){ const c=new Date(); c.setDate(c.getDate()-42); return data.trainings.filter(t=>new Date(t.date)>=c); }
+  if(filterMode==='custom'&&customFrom&&customTo){ return data.trainings.filter(t=>t.date>=customFrom&&t.date<=customTo); }
+  return data.trainings;
+}
+
+function renderProgress(){
+  const data=getData();
+  const container=document.getElementById('prog-container');
+  document.getElementById('level-badge').textContent=getLevel(data.trainings);
+  if(!data.trainings.length){ container.innerHTML='<div class="empty-card">Log je eerste training om voortgang te zien.</div>'; return; }
+  const filtered=getFilteredTrainings(data);
+  if(!filtered.length){ container.innerHTML='<div class="empty-card">Geen trainingen in deze periode.</div>'; return; }
+
+  const exWeeks={};
+  filtered.forEach(t=>{
+    const wk='W'+getWeekNum(new Date(t.date));
+    t.exercises.forEach(ex=>{
+      if(!exWeeks[ex.name]) exWeeks[ex.name]={};
+      const maxKg=Math.max(...ex.sets.map(s=>parseFloat(s.kg)||0));
+      if(maxKg===0) return;
+      if(!exWeeks[ex.name][wk]||maxKg>exWeeks[ex.name][wk]) exWeeks[ex.name][wk]=maxKg;
+    });
+  });
+
+  const exNames=Object.keys(exWeeks).filter(n=>Object.values(exWeeks[n]).some(v=>v>0));
+  if(!exNames.length){ container.innerHTML='<div class="empty-card">Nog geen oefeningen met gewicht gelogd.</div>'; return; }
+
+  const allWeeks=[...new Set(filtered.map(t=>'W'+getWeekNum(new Date(t.date))))].sort((a,b)=>parseInt(a.slice(1))-parseInt(b.slice(1)));
+  if(activeLines.size===0||![...activeLines].some(n=>exNames.includes(n))) { activeLines=new Set(); exNames.slice(0,3).forEach(n=>activeLines.add(n)); }
+
+  container.innerHTML='';
+  const chartCard=document.createElement('div'); chartCard.className='chart-card';
+  const wrap=document.createElement('div'); wrap.className='chart-wrap';
+  const canvas=document.createElement('canvas'); canvas.className='line-chart';
+  wrap.appendChild(canvas); chartCard.appendChild(wrap); container.appendChild(chartCard);
+
+  const legend=document.createElement('div'); legend.className='legend';
+  legend.innerHTML='<div class="legend-header"><span class="legend-col">Oefening</span><span class="legend-col">Hoogste gewicht</span></div>';
+  exNames.forEach((name,i)=>{
+    const color=LINE_COLORS[i%LINE_COLORS.length];
+    const isActive=activeLines.has(name);
+    const maxKg=Math.max(...Object.values(exWeeks[name]));
+    const row=document.createElement('div'); row.className='legend-row';
+    row.innerHTML=`<div class="legend-left"><div class="legend-check" style="background:${isActive?color:'var(--elevated)'}">${isActive?'<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>':''}</div><span class="legend-name${isActive?'':' muted'}">${name}</span></div><span class="legend-val${isActive?'':' muted'}">${maxKg>0?maxKg+' kg':'—'}</span>`;
+    row.onclick=()=>{ if(activeLines.has(name)){if(activeLines.size>1)activeLines.delete(name);}else activeLines.add(name); renderProgress(); };
+    legend.appendChild(row);
+  });
+  container.appendChild(legend);
+  requestAnimationFrame(()=>drawChart(canvas,exNames,exWeeks,allWeeks,LINE_COLORS));
+}
+
+function drawChart(canvas,exNames,exWeeks,weeks,colors){
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.parentElement.getBoundingClientRect();
+  const W=rect.width,H=rect.height||160;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+  const pad={top:20,right:16,bottom:28,left:36};
+  const cw=W-pad.left-pad.right,ch=H-pad.top-pad.bottom;
+  let gmax=0,gmin=Infinity;
+  exNames.forEach(n=>{ if(!activeLines.has(n)) return; Object.values(exWeeks[n]).forEach(v=>{if(v>gmax)gmax=v;if(v<gmin)gmin=v;}); });
+  if(gmax===0) return;
+  gmin=Math.max(0,gmin-5); const range=gmax-gmin||1;
+  ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  [gmin,gmin+range*0.33,gmin+range*0.66,gmax].map(v=>Math.round(v)).forEach(v=>{
+    const y=pad.top+ch-((v-gmin)/range)*ch;
+    ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(pad.left+cw,y); ctx.stroke();
+    ctx.fillStyle='rgba(136,136,136,0.8)'; ctx.font='10px Inter,sans-serif'; ctx.textAlign='right';
+    ctx.fillText(v,pad.left-6,y+3);
+  });
+  ctx.setLineDash([]);
+  const xStep=weeks.length>1?cw/(weeks.length-1):cw;
+  ctx.fillStyle='rgba(136,136,136,0.8)'; ctx.font='10px Inter,sans-serif'; ctx.textAlign='center';
+  weeks.forEach((w,i)=>ctx.fillText(w,pad.left+i*xStep,H-6));
+  exNames.forEach((name,ni)=>{
+    if(!activeLines.has(name)) return;
+    const color=colors[ni%colors.length];
+    const pts=weeks.map((w,i)=>{ const v=exWeeks[name][w]; if(v===undefined) return null; return{x:pad.left+i*xStep,y:pad.top+ch-((v-gmin)/range)*ch}; }).filter(Boolean);
+    if(!pts.length) return;
+    ctx.strokeStyle=color; ctx.lineWidth=2;
+    ctx.beginPath(); pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y)); ctx.stroke();
+    pts.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,5,0,Math.PI*2); ctx.fillStyle=color; ctx.fill(); ctx.strokeStyle='#0e0e0f'; ctx.lineWidth=2; ctx.stroke(); });
+  });
+}
+
+
+function exportData(){
+  const data = getData();
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = 'lift-backup-' + date + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if(!imported.trainings || !Array.isArray(imported.trainings)){
+        alert('Ongeldig bestand. Zorg dat je een Lift-exportbestand gebruikt.');
+        return;
+      }
+      const existing = getData();
+      const existingIds = new Set(existing.trainings.map(t=>t.id));
+      const newTrainings = imported.trainings.filter(t=>!existingIds.has(t.id));
+      existing.trainings = [...existing.trainings, ...newTrainings]
+        .sort((a,b)=>a.date.localeCompare(b.date));
+      saveData(existing);
+      renderHome();
+      alert(newTrainings.length + ' training(en) geïmporteerd.');
+    } catch(err) {
+      alert('Er ging iets mis bij het importeren. Controleer het bestand.');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+filterPills('');
+renderHome();
+</script>
+</body>
+</html>
