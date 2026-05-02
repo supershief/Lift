@@ -90,6 +90,8 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .del-set svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .add-set-btn { background: none; border: none; color: var(--accent); font-size: 13px; font-family: inherit; cursor: pointer; padding: 4px 0; display: flex; align-items: center; gap: 4px; }
 .add-set-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.load-prev-btn { width:100%; background:var(--bg-surface); border:1px solid var(--bg-elevated); border-radius:var(--r-md); color:var(--text-sec); font-size:13px; font-family:inherit; padding:11px 16px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:16px; transition:border-color 0.15s,color 0.15s; }
+.load-prev-btn:hover { border-color:var(--accent-light); color:var(--text); }
 .add-ex-btn { width: 100%; background: transparent; border: 1px solid var(--elevated); border-radius: var(--r-md); padding: 0 16px; height: 44px; font-size: 14px; color: var(--text-sec); font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; transition: border-color 0.15s, color 0.15s; }
 .add-ex-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .add-ex-btn:hover { border-color: var(--accent-light); color: var(--text); }
@@ -224,6 +226,16 @@ canvas.line-chart { width: 100%; height: 100%; display: block; }
     <span>Voortgang</span>
   </button>
 </nav>
+
+<!-- PREV TRAINING MODAL -->
+<div class="modal-overlay" id="prev-modal">
+  <div class="modal">
+    <div class="modal-title">Vorige training laden</div>
+    <p style="font-size:13px;color:var(--text-sec);margin-bottom:16px">Kies een training als startpunt. Je kunt alles aanpassen voor je opslaat.</p>
+    <div id="prev-list"></div>
+    <button class="modal-cancel" onclick="closePrevModal()">Annuleren</button>
+  </div>
+</div>
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modal">
@@ -448,8 +460,12 @@ function filterPills(v){
   document.getElementById('pills').innerHTML=list.map(s=>`<button class="pill" onclick="selectEx('${s}')">${s}</button>`).join('');
 }
 function selectEx(n){ document.getElementById('modal-inp').value=n; }
+function normalizeName(n){
+  return n.trim().charAt(0).toUpperCase() + n.trim().slice(1).toLowerCase();
+}
 function confirmEx(){
-  const n=document.getElementById('modal-inp').value.trim(); if(!n) return;
+  const raw=document.getElementById('modal-inp').value.trim(); if(!raw) return;
+  const n=normalizeName(raw);
   exercises.push({name:n,type:'weight',sets:[{kg:'',reps:'',sec:''}]});
   closeModal(); renderExercises();
 }
@@ -617,6 +633,52 @@ function importData(event){
     event.target.value = '';
   };
   reader.readAsText(file);
+}
+
+function openPrevModal(){
+  const data = getData();
+  const list = document.getElementById('prev-list');
+  // Haal unieke trainingen op (geen duplicaten van vandaag), laatste 5
+  const today = todayStr();
+  const unique = [];
+  const seen = new Set();
+  [...data.trainings].reverse().forEach(t => {
+    if(t.date === today) return;
+    if(!seen.has(t.name)){
+      seen.add(t.name);
+      unique.push(t);
+    }
+  });
+  const recent = unique.slice(0,5);
+  if(!recent.length){
+    list.innerHTML = '<p style="font-size:14px;color:var(--text-sec);text-align:center;padding:20px 0">Nog geen vorige trainingen gevonden.</p>';
+  } else {
+    list.innerHTML = recent.map((t,i) => `
+      <div onclick="loadPrevTraining(${i})" style="background:var(--bg-elevated);border-radius:var(--r-md);padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='#3a3a3e'" onmouseout="this.style.background='var(--bg-elevated)'">
+        <div style="font-size:15px;font-weight:500;color:var(--text);margin-bottom:4px">${t.name}</div>
+        <div style="font-size:12px;color:var(--text-sec)">${new Date(t.date).toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'})} · ${t.exercises.length} oefening${t.exercises.length!==1?'en':''}</div>
+      </div>`).join('');
+    // Sla recent op voor gebruik in loadPrevTraining
+    window._prevTrainings = recent;
+  }
+  document.getElementById('prev-modal').classList.add('open');
+}
+
+function closePrevModal(){
+  document.getElementById('prev-modal').classList.remove('open');
+}
+
+function loadPrevTraining(i){
+  const t = window._prevTrainings[i];
+  trainingName = t.name;
+  document.getElementById('log-name').textContent = trainingName;
+  exercises = t.exercises.map(ex=>({
+    name: ex.name,
+    type: ex.type||'weight',
+    sets: ex.sets.map(s=>({kg:s.kg||'',reps:s.reps||'',sec:s.sec||''}))
+  }));
+  closePrevModal();
+  renderExercises();
 }
 
 filterPills('');
